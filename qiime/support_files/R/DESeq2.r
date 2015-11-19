@@ -31,7 +31,7 @@ if(is.null(opts$input_path)) stop('Please supply an otu table.')
                 	foo = read_biom(input_path)
                 	x = as(biom_data(foo), "matrix")
                 	# avoid zeros
-                	x = x + 1
+                	#x = x + 1
                 	sampleTable <- data.frame(sampleName=colnames(x))
                 	#Add mock design: these should not influence normalization - just required for DESeqDataSetFromMatrix
           			dds <- DESeqDataSetFromMatrix(x, sampleTable, design=~1)

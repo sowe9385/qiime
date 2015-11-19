@@ -41,7 +41,7 @@ if(is.null(opts$subcategory_2)) stop('Please supply a second subcategory.')
             foo = read_biom(input_path)
             x = as(biom_data(foo), "matrix")
             # avoid zeros
-            x = x + 1
+            #x = x + 1  #pseudo-count not a good idea
             colData <- data.frame(sample_metadata(foo))
             dds <- DESeqDataSetFromMatrix(x, colData, design = as.formula(paste("~",mapping_category)))
             suppressWarnings(dds <- try(DESeq(dds, quiet = TRUE), silent = TRUE))

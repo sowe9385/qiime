@@ -8,7 +8,7 @@ from biom import load_table
 
 from skbio.util import remove_files
 from qiime.util import get_qiime_temp_dir
-from qiime.differential_abundance import DA_fitZIG, DA_DESeq2, check_mapping_file_category
+from qiime.differential_abundance import DA_fitFeatureModel, DA_DESeq2, check_mapping_file_category
 
 
 __author__ = "Sophie Weiss"
@@ -52,21 +52,21 @@ class RDifferentialAbundanceTests(TestCase):
         seq_file.write(test_map)
         seq_file.close()
 
-        fd, self.tmp_otu_fp_fitZIG_out = mkstemp(dir=self.tmp_dir,
-                                                prefix='R_test_otu_table_fitZIG_out_',
+        fd, self.tmp_otu_fp_fitFeatureModel_out = mkstemp(dir=self.tmp_dir,
+                                                prefix='R_test_otu_table_fitFeatureModel_out_',
                                                 suffix='.txt')
         fd, self.tmp_otu_fp_DESeq2_out = mkstemp(dir=self.tmp_dir,
                                                 prefix='R_test_otu_table_DESeq2_out_',
                                                 suffix='.txt')
-        fd, self.tmp_otu_fp_fitZIG_out_no_taxa = mkstemp(dir=self.tmp_dir,
-                                                prefix='R_test_otu_table_fitZIG_out_no_taxa',
+        fd, self.tmp_otu_fp_fitFeatureModel_out_no_taxa = mkstemp(dir=self.tmp_dir,
+                                                prefix='R_test_otu_table_fitFeatureModel_out_no_taxa',
                                                 suffix='.txt')
         fd, self.tmp_otu_fp_DESeq2_out_no_taxa = mkstemp(dir=self.tmp_dir,
                                                 prefix='R_test_otu_table_DESeq2_out_no_taxa',
                                                 suffix='.txt')
 
         self.files_to_remove = \
-            [self.tmp_otu_fp, self.tmp_otu_fp_no_taxa, self.tmp_map_fp, self.tmp_otu_fp_fitZIG_out, self.tmp_otu_fp_DESeq2_out, self.tmp_otu_fp_fitZIG_out_no_taxa, self.tmp_otu_fp_DESeq2_out_no_taxa]
+            [self.tmp_otu_fp, self.tmp_otu_fp_no_taxa, self.tmp_map_fp, self.tmp_otu_fp_fitFeatureModel_out, self.tmp_otu_fp_DESeq2_out, self.tmp_otu_fp_fitFeatureModel_out_no_taxa, self.tmp_otu_fp_DESeq2_out_no_taxa]
 
     def tearDown(self):
         remove_files(set(self.files_to_remove))
@@ -104,16 +104,16 @@ class RDifferentialAbundanceTests(TestCase):
         # header line
         self.assertTrue(lines[0].startswith(expected_header_start))
 
-    def test_metagenomeSeq_fitZIG_format(self):
+    def test_metagenomeSeq_fitFeatureModel_format(self):
         ## Test case where there is taxonomy in input file
-        DA_fitZIG(self.tmp_otu_fp, self.tmp_otu_fp_fitZIG_out, self.tmp_map_fp,
+        DA_fitFeatureModel(self.tmp_otu_fp, self.tmp_otu_fp_fitFeatureModel_out, self.tmp_map_fp,
                   'Individual', 'S1', 'S2')
-        self.check_results_fp(self.tmp_otu_fp_fitZIG_out, "OTU")
+        self.check_results_fp(self.tmp_otu_fp_fitFeatureModel_out, "OTU")
 
         ## Test case where no taxonomy in input file
-        DA_fitZIG(self.tmp_otu_fp_no_taxa, self.tmp_otu_fp_fitZIG_out_no_taxa,
+        DA_fitFeatureModel(self.tmp_otu_fp_no_taxa, self.tmp_otu_fp_fitFeatureModel_out_no_taxa,
                 self.tmp_map_fp, 'Individual', 'S1', 'S2')
-        self.check_results_fp(self.tmp_otu_fp_fitZIG_out_no_taxa, "Taxa")
+        self.check_results_fp(self.tmp_otu_fp_fitFeatureModel_out_no_taxa, "Taxa")
 
     def test_DESeq2_nbinom_format(self):
         ## Test case where there is taxonomy in input file

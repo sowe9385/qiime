@@ -3,7 +3,7 @@
 from __future__ import division
 
 from qiime.util import parse_command_line_parameters, make_option
-from qiime.differential_abundance import (DA_fitZIG, multiple_file_DA_fitZIG,
+from qiime.differential_abundance import (DA_fitFeatureModel, multiple_file_DA_fitFeatureModel,
     DA_DESeq2, multiple_file_DA_DESeq2, algorithm_list)
 
 import os
@@ -17,16 +17,16 @@ __maintainer__ = "Sophie Weiss"
 __email__ = "sophie.sjw@gmail.com"
 
 script_info = {}
-script_info['brief_description'] = "Identify OTUs that are differentially abundance across two sample categories"
+script_info['brief_description'] = "Identify OTUs that are differentially abundant across two sample categories"
 script_info['script_description'] = \
 """OTU differential abundance testing is commonly used to identify OTUs that
-differ between two mapping file sample categories (i.e. Palm and Tongue body
+differ between two mapping file sample categories (e.g. Palm and Tongue body
 sites).  We would recommend having at least 5 samples in each category.  These 
 methods can be used in comparison to group_significance.py on a rarefied matrix, 
 and we would always recommend comparing the results of these approaches to the
 rarefied/group_significance.py approaches.  We would also recommend treating the
-differentially abundant OTUs identified by these (metagenomeSeq zero-inflated Gaussian,
-or ZIG, and DESeq2 negative binomial Wald test) techniques with caution, as they assume a
+differentially abundant OTUs identified by these (metagenomeSeq zero-inflated lognormal,
+and DESeq2 negative binomial Wald test) techniques with caution, as they assume a
 distribution and are therefore parametric tests.  Parametric tests can do poorly if
 the assumptions about the data are not met.  These tests are also newer techniques
 that are less well tested compared to rarefying with a group_significance.py test.  
@@ -36,35 +36,34 @@ With these techniques, we would still recommend removing low depth samples (e.g.
 1000 sequences per sample), and low abundance/rare OTUs from the data set.  The DESeq2 method
 should NOT be used if the fit line on the dispersion plot (one of the diagnostic plots
 output by the -d, or --DESeq2_diagnostic_plots option) does not look smooth, there are big
-gaps in the point spacings, and the fitted line does not look appropriate for the data.
+gaps in the point spacings, and/or the fitted line does not look appropriate for the data.
 
-DESeq2 is stronger at very small/smaller data sets, but the run-time beyond 100 
-total samples becomes very long.  MetagenomeSeq's fitZIG is a better algorithm for larger
-library sizes and over 50 samples per category (e.g. 50 Palm samples), the more the better. 
-In simulation, these techniques have higher sensitivity, but sometimes higher false positive
-rate compared to the non-parametric tests (e.g. Wilcoxon rank sum) in group_significance.py, 
-especially with very uneven library sizes (starting at 2-3 fold difference).  In practice 
-and with real data, we do not observe much of a difference between these results and 
-the tests in group_significance.py.  
+DESeq2 is best for very small/smaller data sets (<20 samples per group), but may have more
+false discoveries with larger numbers of samples per group.  MetagenomeSeq's zero-inflated lognormal
+method (fitFeatureModel) works with all sample sizes.  fitFeatureModel is an improvement upon 
+the zero-inflated gaussian method (fitZIG). In simulation, these techniques have higher sensitivity
+compared to the non-parametric tests (e.g. Wilcoxon rank sum) in group_significance.py, for 
+small sample sizes.  However, they tend towards more false discoveries with very uneven mean
+group library sizes (greater than ~5 fold difference). 
 
 For more on these techniques please see McMurdie, P. and Holmes, S. 'Waste not want not 
 why rarefying microbiome data is inadmissible.' PLoS Comp. Bio. 2014.  For more on 
-metagenomeSeq and fitZIG, please read Paulson, JN, et al. 'Differential abundance analysis
+metagenomeSeq, please read Paulson, JN, et al. 'Differential abundance analysis
 for microbial marker-gene surveys.'  Nature Methods 2013.  For DESeq2/DESeq please read
 Love, MI et al. 'Moderated estimation of fold change and dispersion for RNA-Seq data 
 with DESeq2,' Genome Biology 2014.  Anders S, Huber W. 'Differential expression analysis 
-for sequence count data.' Genome Biology 2010.  Additionally, you can also read the
-vignettes for each of the techniques on the Bioconductor/R websites.  Also, if you use
-these methods, please CITE the proper sources above (metagenomeSeq and DESeq2) as well as QIIME."""
+for sequence count data.' Genome Biology 2010.  Additionally, you can read the
+vignettes for each of the techniques on the Bioconductor/R websites.  If you use these methods, 
+please CITE the proper sources above (metagenomeSeq and DESeq2) as well as QIIME."""
 
 script_info['script_usage'] = []
 script_info['script_usage'].append((
-    "Single File OTU Differential Abundance Testing with metagenomeSeq_fitZIG",
-    """Apply metagenomeSeq_fitZIG differential OTU abundance testing to a """
+    "Single File OTU Differential Abundance Testing with metagenomeSeq_fitFeatureModel",
+    """Apply metagenomeSeq_fitFeatureModel differential OTU abundance testing to a """
     """raw (NOT normalized) BIOM table to test for differences in OTU """
     """abundance between samples in the Treatment:Control and """
     """Treatment:Fast groups.""",
-    "%prog -i otu_table.biom -o diff_otus.txt -m map.txt -a metagenomeSeq_fitZIG -c Treatment -x Control -y Fast")
+    "%prog -i otu_table.biom -o diff_otus.txt -m map.txt -a metagenomeSeq_fitFeatureModel -c Treatment -x Control -y Fast")
     )
 script_info['script_usage'].append((
     "Single File OTU Differential Abundance Testing with DESeq2_nbinom",
@@ -75,12 +74,12 @@ script_info['script_usage'].append((
     "%prog -i otu_table.biom -o diff_otus.txt -m map.txt -a DESeq2_nbinom -c Treatment -x Control -y Fast -d")
     )
 script_info['script_usage'].append((
-    "Multiple File OTU Differential Abundance Testing with metagenomeSeq_fitZIG",
-    """Apply metagenomeSeq_fitZIG differential OTU abundance testing to a """
+    "Multiple File OTU Differential Abundance Testing with metagenomeSeq_fitFeatureModel",
+    """Apply metagenomeSeq_fitFeatureModel differential OTU abundance testing to a """
     """folder of raw (NOT normalized) BIOM tables to test for differences """
     """in OTU abundance between samples in the Treatment:Control and """
     """Treatment:Fast groups.""",
-    "%prog -i otu_tables/ -o diff_otus/ -m map.txt -a metagenomeSeq_fitZIG -c Treatment -x Control -y Fast")
+    "%prog -i otu_tables/ -o diff_otus/ -m map.txt -a metagenomeSeq_fitFeatureModel -c Treatment -x Control -y Fast")
     )
 script_info['output_description']= "The resulting output OTU txt file contains a list of all the OTUs in the input matrix, along with their associated statistics and FDR p-values."
 script_info['required_options']=[
@@ -93,7 +92,7 @@ script_info['optional_options']=[
     make_option('-o', '--out_path', type='new_path',
     help='output filename for single file operation, or output '
     'directory for batch processing [REQUIRED if not passing -l]'),
-make_option('-a', '--algorithm', default='metagenomeSeq_fitZIG', type='choice',
+make_option('-a', '--algorithm', default='metagenomeSeq_fitFeatureModel', type='choice',
     choices=algorithm_list(), help='differential abundance algorithm to '
     'apply to input BIOM table(s) [default: %default]' + ' Available options are: '
     '%s' % ', '.join(algorithm_list())),
@@ -135,11 +134,11 @@ def main():
         for option in almost_required_options:
             if getattr(opts, option) is None:
                 option_parser.error('Required option --%s omitted.' % option)        
-        if algorithm == 'metagenomeSeq_fitZIG':
+        if algorithm == 'metagenomeSeq_fitFeatureModel':
             if os.path.isdir(input_path):
-                multiple_file_DA_fitZIG(input_path, out_path, mapping_fp, mapping_category, subcategory_1, subcategory_2)
+                multiple_file_DA_fitFeatureModel(input_path, out_path, mapping_fp, mapping_category, subcategory_1, subcategory_2)
             elif os.path.isfile(input_path):
-                DA_fitZIG(input_path, out_path, mapping_fp, mapping_category, subcategory_1, subcategory_2)
+                DA_fitFeatureModel(input_path, out_path, mapping_fp, mapping_category, subcategory_1, subcategory_2)
             else:
                 # it shouldn't be possible to get here
                 option_parser.error("Unknown input type: %s" % input_path)        
